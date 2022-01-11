@@ -1,0 +1,68 @@
+SELECT Location, date, total_cases, new_cases, total_deaths, population
+FROM `practice-319122.coviddeaths.coviddeaths`
+ORDER BY 1,2
+
+-- looking at total_cases vs total_deaths
+-- Death rate by covid in canada if one gets infected
+
+SELECT Location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 AS deathrate
+FROM `practice-319122.coviddeaths.coviddeaths`
+WHERE Location = "Canada"
+ORDER BY 1,2
+
+-- looking at total cases vs population
+-- Percentage of poupulation in canada got covid
+
+SELECT Location, date, total_cases, population, (total_cases/population)*100 AS infectionrate
+FROM `practice-319122.coviddeaths.coviddeaths`
+WHERE Location = "Canada"
+ORDER BY 1,2
+
+--looking at countries with highest infection rate compared to population
+
+SELECT Location, MAX(total_cases) AS HighestInfectionCount, population, MAX((total_cases/population)*100) AS PercentPopulationInfected
+FROM `practice-319122.coviddeaths.coviddeaths`
+GROUP BY Location, population
+ORDER BY 4 DESC 
+ 
+-- looking at countries with highest death count
+SELECT Location, MAX(total_deaths) AS TotalDeathCount
+FROM `practice-319122.coviddeaths.coviddeaths`
+WHERE continent is not null
+GROUP BY Location
+ORDER BY TotalDeathCount DESC
+
+-- looking at continents with highest death count
+SELECT continent, MAX(total_deaths) AS TotalDeathCount
+FROM `practice-319122.coviddeaths.coviddeaths`
+WHERE continent is not null
+GROUP BY continent
+ORDER BY TotalDeathCount DESC
+
+-- GLOBAL NUMBERS by date
+
+SELECT Location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 AS deathrate
+FROM `practice-319122.coviddeaths.coviddeaths`
+WHERE Location = "World"
+ORDER BY 1,2
+
+-- Join coviddeaths table and covidvaccination table and perform rolling count of total vaccination by date
+
+SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations, 
+       (SUM(vac.new_vaccinations) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.date )) AS RollingPeopleVaccinated
+FROM `practice-319122.coviddeaths.coviddeaths` AS dea
+JOIN `practice-319122.coviddeaths.covidvaccinations` AS vac
+     ON dea.location = vac.location
+     AND dea.date = vac.date
+WHERE dea.continent is not null
+ORDER BY 2,3
+
+-- Save the results table of above query as RollingPeopleVaccinated
+-- Then Perform Vaccination Rate Calculation
+
+
+
+SELECT *, (RollingPeopleVaccinated/population)*100 as vaccinationrate
+FROM `practice-319122.coviddeaths.RollingPeopleVaccinated`
+
+-- Store the vaccinationrate table from above query to use it for visualisation
